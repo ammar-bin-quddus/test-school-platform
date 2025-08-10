@@ -21,8 +21,10 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.1",
     "morgan": "^1.10.1",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "twilio": "^5.8.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -30,6 +32,8 @@
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.2.1",
+    "@types/nodemailer": "^6.4.17",
+    "@types/twilio": "^3.19.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   }

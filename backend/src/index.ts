@@ -2,6 +2,7 @@ require('dotenv').config();
 import express, { Request, Response } from "express";
 const cors = require('cors');
 const morgan = require('morgan');
+import './jobs/otpCleanup.job'; // Load the job
 import authRoutes from './routes/auth.route';
 import adminRoutes from './routes/admin.route';
 import testRoutes from './routes/test.route';
