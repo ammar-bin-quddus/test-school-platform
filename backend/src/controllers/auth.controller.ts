@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import User from '../models/User.model';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { generateAccessToken, generateRefreshToken, verifyToken } from '../utils/token.utils';
 import { sendOtpEmail, sendOtpSms } from '../services/otp.service';
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
+
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
 
 // Helper: Generate random 6-digit OTP
 function generateOtp() {
@@ -101,25 +102,46 @@ export const resendOtp = async (req: Request, res: Response) => {
 };
 
 /**
- * Login (only if verified)
+ * Login and issue tokens
  */
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
   try {
+    const { email, password } = req.body;
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+
+    if (!user.isVerified)
+      return res.status(403).json({ error: "Account not verified" });
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
-    if (!user.isVerified) {
-      return res.status(403).json({ error: 'Account not verified. Please verify OTP.' });
-    }
+    const payload = { id: user._id, role: user.role };
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token, user });
+    res.json({ accessToken, refreshToken, user });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: "Login failed" });
+  }
+};
+
+/**
+ * Refresh access token
+ */
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken)
+      return res.status(401).json({ error: "Refresh token required" });
+
+    const decoded = verifyToken(refreshToken, JWT_REFRESH_SECRET);
+    const payload = { id: decoded.id, role: decoded.role };
+
+    const newAccessToken = generateAccessToken(payload);
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    res.status(403).json({ error: "Invalid or expired refresh token" });
   }
 };
