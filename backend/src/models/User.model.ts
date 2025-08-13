@@ -9,6 +9,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   otpCode?: string;
   otpExpiry?: Date;
+  refreshTokens?: string[];
 }
 
 const UserSchema: Schema = new Schema(
@@ -20,7 +21,8 @@ const UserSchema: Schema = new Schema(
     role: { type: String, enum: ["student", "admin", "supervisor"], default: "student" },
     isVerified: { type: Boolean, default: false },
     otpCode: { type: String },
-    otpExpiry: { type: Date }
+    otpExpiry: { type: Date },
+    refreshTokens: [{ type: String }]
   },
   { timestamps: true }
 );

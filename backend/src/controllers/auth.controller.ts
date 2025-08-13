@@ -16,7 +16,7 @@ function generateOtp() {
  * Register user and send OTP
  */
 export const register = async (req: Request, res: Response) => {
-  const { email, password, phone, role } = req.body;
+  const { name, phone, email, password, role } = req.body;
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'Email already registered' });
@@ -27,6 +27,8 @@ export const register = async (req: Request, res: Response) => {
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
     const user = await User.create({
+      name,
+      phone,
       email,
       password: hashed,
       role: role || 'student',
@@ -121,6 +123,11 @@ export const login = async (req: Request, res: Response) => {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
+    // Store refresh token in DB
+    user.refreshTokens = user.refreshTokens || [];
+    user.refreshTokens.push(refreshToken);
+    await user.save();
+
     res.json({ accessToken, refreshToken, user });
   } catch (err) {
     res.status(500).json({ error: "Login failed" });
@@ -137,11 +144,40 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Refresh token required" });
 
     const decoded = verifyToken(refreshToken, JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user || !user.refreshTokens?.includes(refreshToken)) {
+      return res.status(403).json({ error: "Invalid refresh token" });
+    }
     const payload = { id: decoded.id, role: decoded.role };
 
     const newAccessToken = generateAccessToken(payload);
     res.json({ accessToken: newAccessToken });
   } catch (error) {
     res.status(403).json({ error: "Invalid or expired refresh token" });
+  }
+};
+
+/**
+ * Logout - remove refresh token
+ */
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken)
+      return res.status(400).json({ error: "Refresh token required" });
+
+    const decoded = verifyToken(refreshToken, JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (user) {
+      user.refreshTokens = user.refreshTokens?.filter(
+        (token) => token !== refreshToken
+      );
+      await user.save();
+    }
+
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Logout failed" });
   }
 };

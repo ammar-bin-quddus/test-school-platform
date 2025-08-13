@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import TestResult from '../models/TestResult.model';
 import { evaluateTestScore, Step } from '../services/testFlow.service';
+import { generateAndSendCertificate } from '../services/certificate.service';
+import User from '../models/User.model';
 
 export const submitTestStep = async (req: Request, res: Response) => {
   try {
@@ -49,6 +51,22 @@ export const submitTestStep = async (req: Request, res: Response) => {
     testResult.endTime = new Date();
 
     await testResult.save();
+
+    // If user got a certification level (not null) then generate certificate
+    if (result.certifiedLevel) {
+      // get user's email
+      const user = await User.findById(userId);
+      if (user && user.email) {
+        const cert = await generateAndSendCertificate({
+          userId,
+          testResultId: testResult._id as string,
+          level: result.certifiedLevel,
+          email: user.email,
+          sendEmail: true
+        });
+        return res.status(201).json({ message: 'Test submitted; certificate issued', result, testResult, certificate: cert });
+      }
+    }
 
     return res.status(201).json({
       message: 'Test result recorded',

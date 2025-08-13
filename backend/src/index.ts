@@ -5,6 +5,7 @@ const morgan = require('morgan');
 import './jobs/otpCleanup.job'; // Load the job
 import authRoutes from './routes/auth.route';
 import adminRoutes from './routes/admin.route';
+import certificateRoutes from './routes/certificate.route';
 import testRoutes from './routes/test.route';
 import connectDB from "./db";
 
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);
