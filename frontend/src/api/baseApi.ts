@@ -61,7 +61,7 @@ const axiosBaseQuery =
 
           // Call refresh endpoint
           const refreshRes = await axiosInstance.post(
-            baseUrl + "/auth/refresh",
+            baseUrl + "/auth/refresh-Token", 
             { refreshToken }
           );
 
